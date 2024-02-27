@@ -15,12 +15,13 @@ WORKDIR /data/web
 ADD build build
 
 # 将项目必要文件添加到工作空间，这里我们把nginx配置文件维护在项目里，部署时直接移动配置文件，就不需要在去处理nginx配置了
-COPY ./scripts/run.sh ./
 COPY ./config/nginx.conf /etc/nginx/conf.d/default.conf
 
 # 暴露80端口
 EXPOSE 80
-ENTRYPOINT ["sh", "./run.sh"]  
+
+# 启动nginx，要用前台启动
+ENTRYPOINT ["nginx", "-g", "daemon off;"]  
 ```
 
 ### 2.打包项目代码
