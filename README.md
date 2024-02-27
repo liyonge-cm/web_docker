@@ -1,70 +1,66 @@
-# Getting Started with Create React App
+# 使用Docker部署前端
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+### 1.创建Dockerfile
 
-## Available Scripts
+在项目跟目录下创建Dockerfile文件：  
 
-In the project directory, you can run:
+```dockerfile
+# 使用nginx作为基础镜像
+FROM nginx:1.19.1
 
-### `npm start`
+# 指定工作空间
+WORKDIR /data/web
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+# 将 yarn build 打包后的build文件夹添加到工作空间
+ADD build build
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+# 将项目必要文件添加到工作空间，这里我们把nginx配置文件维护在项目里，部署时直接移动配置文件，就不需要在去处理nginx配置了
+COPY ./scripts/run.sh ./
+COPY ./config/nginx.conf /etc/nginx/conf.d/default.conf
 
-### `npm test`
+# 暴露80端口
+EXPOSE 80
+ENTRYPOINT ["sh", "./run.sh"]  
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 2.打包项目代码
+```shell
+yarn build
+```
 
-### `npm run build`
+### 3.打包镜像
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+打包最新镜像，镜像名为web，tag为latest
+```shell
+docker build -t web:latest . 
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+![alt text](images/build_image.png)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+查看打包好的镜像
+```shell
+docker images 
+```
 
-### `npm run eject`
+![alt text](images/show_image.png)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 4.启动容器
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+使用镜像web:latest启动容器，容器名称为my-web，端口映射到8000
+```shell
+docker run -d --name my-web -p 8000:80 web:latest
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+![alt text](images/docker_run.png)
 
-## Learn More
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+查看运行中的容器
+```shell
+docker ps
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+![alt text](images/docker_ps.png)
 
-### Code Splitting
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+最后直接在浏览器打开 ip:8000，就可以看到web页面了
